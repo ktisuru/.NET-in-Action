@@ -1,0 +1,3 @@
+is_global = true
+build_property.RootNamespace = SqLiteConsoleTest
+build_property.ProjectDir = D:\.NET core in Action\SqLiteConsoleTest\SqLiteConsoleTest\

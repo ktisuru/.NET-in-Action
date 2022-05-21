@@ -1,0 +1,14 @@
+{
+  "version": 2,
+  "dgSpecHash": "Br5Y1HM4m+E6IGnLQnjNIokQY4QHYHIjXV5WvLwJZ5LPNDZxyjwR9cAca4gQcRUOfgdVMPWmPio+mupwJI1QDA==",
+  "success": true,
+  "projectFilePath": "D:\\.NET core in Action\\SqLiteConsoleTest\\SqLiteConsoleTest\\SqLiteConsoleTest.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\Isuru.K\\.nuget\\packages\\microsoft.data.sqlite.core\\6.0.5\\microsoft.data.sqlite.core.6.0.5.nupkg.sha512",
+    "C:\\Users\\Isuru.K\\.nuget\\packages\\sqlitepclraw.bundle_winsqlite3\\2.0.7\\sqlitepclraw.bundle_winsqlite3.2.0.7.nupkg.sha512",
+    "C:\\Users\\Isuru.K\\.nuget\\packages\\sqlitepclraw.core\\2.0.7\\sqlitepclraw.core.2.0.7.nupkg.sha512",
+    "C:\\Users\\Isuru.K\\.nuget\\packages\\sqlitepclraw.provider.winsqlite3\\2.0.7\\sqlitepclraw.provider.winsqlite3.2.0.7.nupkg.sha512",
+    "C:\\Users\\Isuru.K\\.nuget\\packages\\system.memory\\4.5.3\\system.memory.4.5.3.nupkg.sha512"
+  ],
+  "logs": []
+}

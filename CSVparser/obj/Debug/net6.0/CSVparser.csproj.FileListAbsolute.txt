@@ -1,0 +1,15 @@
+D:\CSVparser\bin\Debug\net6.0\CSVparser.exe
+D:\CSVparser\bin\Debug\net6.0\CSVparser.deps.json
+D:\CSVparser\bin\Debug\net6.0\CSVparser.runtimeconfig.json
+D:\CSVparser\bin\Debug\net6.0\CSVparser.dll
+D:\CSVparser\bin\Debug\net6.0\ref\CSVparser.dll
+D:\CSVparser\bin\Debug\net6.0\CSVparser.pdb
+D:\CSVparser\obj\Debug\net6.0\CSVparser.csproj.AssemblyReference.cache
+D:\CSVparser\obj\Debug\net6.0\CSVparser.GeneratedMSBuildEditorConfig.editorconfig
+D:\CSVparser\obj\Debug\net6.0\CSVparser.AssemblyInfoInputs.cache
+D:\CSVparser\obj\Debug\net6.0\CSVparser.AssemblyInfo.cs
+D:\CSVparser\obj\Debug\net6.0\CSVparser.csproj.CoreCompileInputs.cache
+D:\CSVparser\obj\Debug\net6.0\CSVparser.dll
+D:\CSVparser\obj\Debug\net6.0\ref\CSVparser.dll
+D:\CSVparser\obj\Debug\net6.0\CSVparser.pdb
+D:\CSVparser\obj\Debug\net6.0\CSVparser.genruntimeconfig.cache
