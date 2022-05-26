@@ -13,12 +13,19 @@ namespace WidgetScmDataAccess
 
         public IEnumerable<PartType> Parts { get;  private set; }
         public IEnumerable<InventoryItem> Inventory { get; private set; }
+        public IEnumerable<Supplier> Suppliers { get; private set; }
 
         public ScmContext(DbConnection conn)
         {
             connection = conn;
             ReadParts();
             ReadInventory();
+            ReadSupplier();
+        }
+
+        public DbTransaction BeginTransaction()
+        {
+            return connection.BeginTransaction();
         }
 
         private void ReadParts()
@@ -70,7 +77,7 @@ namespace WidgetScmDataAccess
         {
             var command = connection.CreateCommand();
             command.CommandText = @"INSERT INTO PartCommand
-                 (PartTypeId, Count, Command)
+                 (PartTypeId, PartCount, Command)
               VALUES
                  (@partTypeId, @partCount, @command); 
               SELECT last_insert_rowid();";
@@ -81,6 +88,33 @@ namespace WidgetScmDataAccess
             AddParameter(command, "@command",partCommand.Command.ToString());
             long partCommandId = (long)command.ExecuteScalar();
             partCommand.Id = (int)partCommandId;
+        }
+
+        private void ReadSupplier()
+        {
+            using (var command = connection.CreateCommand())
+            {
+                command.CommandText = @"SELECT Id , Name , Email , PartTypeId FROM Supplier";
+
+                using (var reader = command.ExecuteReader())
+                {
+                    var suppliers = new List<Supplier>();
+                    Suppliers = suppliers;
+
+                    while (reader.Read())
+                    {
+                        var supplier = new Supplier()
+                        {
+                            Id = reader.GetInt32(0),
+                            Name = reader.GetString(1),
+                            Email = reader.GetString(2),
+                            PartTypeId = reader.GetInt32(3)
+                        };
+                        suppliers.Add(supplier);
+                        supplier.Part = Parts.Single(p => p.Id == supplier.PartTypeId);
+                    }
+                }
+            }
         }
 
         private void AddParameter(DbCommand cmd, string name, object value)
@@ -108,7 +142,7 @@ namespace WidgetScmDataAccess
         {
             var command = connection.CreateCommand();
             command.CommandText = @"SELECT
-                 Id, PartTypeId, Count, Command
+                 Id, PartTypeId, PartCount, Command
                  FROM PartCommand
                   ORDER BY Id";
             var reader = command.ExecuteReader();
@@ -128,21 +162,91 @@ namespace WidgetScmDataAccess
             return partCommands;
         }
 
-        public void UpdateInventoryItem(int partTypeId, int count)
+        public void UpdateInventoryItem(int partTypeId, int count , DbTransaction transaction)
         {
             var command = connection.CreateCommand();
+            if (transaction != null)
+                command.Transaction = transaction;
             command.CommandText = @"UPDATE InventoryItem SET Count=@count WHERE PartTypeId=@partTypeId";
             AddParameter(command, "@count", count);
             AddParameter(command, "@partTypeId", partTypeId);
             command.ExecuteNonQuery();
         }
 
-        public void DeletePartCommand(int id)
+        public void DeletePartCommand(int id , DbTransaction transaction)
         {
             var command = connection.CreateCommand();
+            if (transaction != null)
+                command.Transaction = transaction;
             command.CommandText = @"DELETE FROM PartCommand WHERE Id=@id";
             AddParameter(command, "@id", id);
             command.ExecuteNonQuery();
+        }
+
+        public void CreateOrder(Order order)
+        {
+            var transaction = connection.BeginTransaction();
+            try
+            {
+                var command = connection.CreateCommand();
+                command.Transaction = transaction;
+                command.CommandText = @"INSERT INTO [Order] 
+                    (SupplierId, PartTypeId, PartCount,PlacedDate) 
+                    VALUES (@supplierId,@partTypeId, @partCount, @placedDate);
+                    SELECT last_insert_rowid();";
+                AddParameter(command, "@supplierId", order.SupplierId);
+                AddParameter(command, "@partTypeId", order.PartTypeId);
+                AddParameter(command, "@partCount", order.PartCount);
+                AddParameter(command, "@placedDate", order.PlacedDate);
+                long orderId = (long)command.ExecuteScalar();
+                order.Id = (int)orderId;
+
+                command = connection.CreateCommand();
+                command.Transaction = transaction;
+                command.CommandText = @"INSERT INTO SendEmailCommand
+                      ([To] , Subject , Body ) VALUES
+                      (@To , @Subject , @Body)";
+                AddParameter(command, "@To", order.Supplier.Email);
+                AddParameter(command, "@Subject", $"order #{orderId} for ${order.Part.Name}");
+                AddParameter(command, "@Body", $"Please send {order.PartCount} items of {order.Part.Name} to Widget Corp");
+                command.ExecuteNonQuery();
+                transaction.Commit();
+
+            }
+
+            catch
+            {
+                transaction.Rollback();
+                throw;
+            }
+        }
+
+        public IEnumerable<Order> GetOrders()
+        {
+            var command = connection.CreateCommand();
+            command.CommandText = @"SELECT 
+                       Id, SupplierId, PartTypeId, PartCount, PlacedDate, FulfilledDate 
+                       FROM [Order]";
+            var reader = command.ExecuteReader();
+            var orders = new List<Order>();
+            while (reader.Read())
+            {
+                var order = new Order()
+                {
+                    Id = reader.GetInt32(0),
+                    SupplierId = reader.GetInt32(1),
+                    PartTypeId = reader.GetInt32(2),
+                    PartCount = reader.GetInt32(3),
+                    PlacedDate = reader.GetDateTime(4),
+                    FullfilledDate = reader.IsDBNull(5) ?
+                    default(DateTime?) : reader.GetDateTime(5)
+                };
+                order.Part = Parts.Single(p => p.Id == order.PartTypeId);
+                order.Supplier = Suppliers.First(s => s.Id == order.SupplierId);
+                orders.Add(order);
+            }
+
+            return orders;
         }
     }
 }

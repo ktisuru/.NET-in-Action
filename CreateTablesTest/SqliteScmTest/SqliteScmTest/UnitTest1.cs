@@ -1,9 +1,13 @@
 using System.Linq;
 using Xunit;
 using WidgetScmDataAccess;
+using System;
+using Microsoft.Data.Sqlite;
+using System.Data;
+using System.Data.Common;
 
 namespace SqliteScmTest
-{   //this is comment
+{   
     public class UnitTest1 : IClassFixture<SampleScmDataFixture>
     {
         private SampleScmDataFixture fixture;
@@ -33,7 +37,6 @@ namespace SqliteScmTest
         }
 
         [Fact]
-
         public void TestPartCommands()
         {
             var item = context.Inventory.First();
@@ -54,6 +57,87 @@ namespace SqliteScmTest
             var inventory = new Inventory(context);
             inventory.UpdateInventory();
             Assert.Equal(startCount + 5, item.Count);
+        }
+        [Fact]
+        public void TestUpdateInventory()
+        {
+            var item = context.Inventory.First();
+            var totalCount = item.Count;
+            context.CreatePartCommand(new PartCommand()
+            {
+                PartTypeId = item.PartTypeId,
+                PartCount = totalCount,
+                Command = PartCountOperation.Remove
+            }) ;
+
+            var inventory = new Inventory(context);
+            inventory.UpdateInventory();
+            var order = context.GetOrders().FirstOrDefault(
+                o => o.PartTypeId == item.PartTypeId &&
+                !o.FullfilledDate.HasValue);
+            Assert.NotNull(order);
+
+            context.CreatePartCommand(new PartCommand()
+            {
+                PartTypeId = item.PartTypeId,
+                PartCount = totalCount,
+                Command = PartCountOperation.Add
+            }) ;
+
+            inventory.UpdateInventory();
+            Assert.Equal(totalCount , item.Count);
+        }
+
+       
+
+
+        [Fact]
+        public void TestCreateOrderTransaction()
+        {
+            var placedDate = DateTime.Now;
+            var supplier = context.Suppliers.First();
+            var order = new Order()
+            {
+                PartTypeId = supplier.PartTypeId,
+                SupplierId = supplier.Id,
+                PartCount = 10,
+                PlacedDate = placedDate
+            };
+            Assert.Throws<NullReferenceException>(() =>context.CreateOrder(order));
+
+            var command = new SqliteCommand(
+                       @"SELECT Count(*) FROM [Order] WHERE 
+                            SupplierId=@supplierId AND 
+                            PartTypeId=@partTypeId AND
+                            PlacedDate=@placedDate AND
+                            PartCount=10 AND
+                            FulfilledDate IS NULL",
+                fixture.Connection);
+            AddParameter(command, "@supplierId", supplier.Id);
+            AddParameter(command, "@partTypeId", supplier.PartTypeId);
+            AddParameter(command, "@placedDate", placedDate);
+            Assert.Equal(0, (long)command.ExecuteScalar());
+        }
+
+        private void AddParameter(DbCommand cmd, string name, object value)
+        {
+            var p = cmd.CreateParameter();
+            if (value == null)
+                throw new ArgumentNullException("value");
+            Type t = value.GetType();
+            if (t == typeof(int))
+                p.DbType = DbType.Int32;
+            else if (t == typeof(string))
+                p.DbType = DbType.String;
+            else if (t == typeof(DateTime))
+                p.DbType = DbType.DateTime;
+            else
+                throw new ArgumentException(
+                $"Unrecognized type: {t.ToString()}", "value");
+            p.Direction = ParameterDirection.Input;
+            p.ParameterName = name;
+            p.Value = value;
+            cmd.Parameters.Add(p);
         }
     }
 }
